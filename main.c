@@ -4,17 +4,25 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <fcntl.h>
+
+#define MAXBUF 1021
 
 void
 main(int argc, char **argv) {
     int client_socket;
+    int file_name_len;
+    int read_len;
+    int file_fd;
+    char buf[MAXBUF];
 
     struct sockaddr_in server_addr;
 
     if (argv[1] == NULL) {
-        printf("메세지 입력 필요\n");
+        printf("input file_name!!!!!\n");
         exit(1);
     }
+    strcpy(buf,argv[1]);
 
     memset(&server_addr, 0, sizeof(server_addr)); // 0으로 초기화
     server_addr.sin_family = AF_INET; // AF_INET은 주소 체계에서 IPv4를 의미
@@ -32,7 +40,23 @@ main(int argc, char **argv) {
         printf("접속 실패\n");
         exit(1);
     }
+    
+    file_name_len=strlen(argv[1])+1;
+    send(client_socket,argv[1],file_name_len,0);
+    file_fd=open(argv[1],O_RDONLY);
+    if(!file_fd){
+       printf("error\n");
+       exit(1);
+    }
 
-    write(client_socket, argv[1], strlen(argv[1]) + 1); // 메세지 write, NULL까지 포함해서 전송하기 위해 +1
+    while(1){
+            if(read_len==0){
+            break;
+            }
+            memset(buf,0x00,MAXBUF);
+            read_len=read(file_fd,buf,MAXBUF);
+            send(client_socket,buf,read_len,0);
+}
+
     close(client_socket); // 소켓 닫기
 }
